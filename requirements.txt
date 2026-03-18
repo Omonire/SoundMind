@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+celery
+redis
+python-multipart
+google-cloud-storage
+google-cloud-firestore
+google-generativeai
+elevenlabs
+pydub
+pypdf
+python-docx
+python-dotenv
