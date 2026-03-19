@@ -9,7 +9,7 @@ from flask import Flask, request, jsonify, render_template, session, send_from_d
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 import google.generativeai as genai
-import requests
+from elevenlabs.client import ElevenLabs
 from typing import List, Dict, Any, Optional
 
 # Load environment variables
@@ -202,7 +202,7 @@ def process_document(text: str, mode: str) -> str:
         raise ValueError("GEMINI_API_KEY is not set")
 
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-1.5-pro')
+    model = genai.GenerativeModel('gemini-1.5-flash')
 
     if mode == 'podcast':
         prompt = (
@@ -222,7 +222,7 @@ def process_document(text: str, mode: str) -> str:
     return response.text
 
 def generate_audio(script: str) -> str:
-    """Uses ElevenLabs API to convert script to MP3 and returns the URL.
+    """Uses ElevenLabs SDK to convert script to MP3 and returns the URL.
 
     For POC, we'll save the file locally and return the path as the URL.
     """
@@ -230,25 +230,14 @@ def generate_audio(script: str) -> str:
     if not api_key:
         raise ValueError("ELEVENLABS_API_KEY is not set")
 
-    url = "https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM" # Adam voice
-    headers = {
-        "Accept": "audio/mpeg",
-        "Content-Type": "application/json",
-        "xi-api-key": api_key
-    }
+    client = ElevenLabs(api_key=api_key)
 
-    data = {
-        "text": script,
-        "model_id": "eleven_monolingual_v1",
-        "voice_settings": {
-            "stability": 0.5,
-            "similarity_boost": 0.5
-        }
-    }
-
-    response = requests.post(url, json=data, headers=headers)
-    if response.status_code != 200:
-        raise Exception(f"ElevenLabs API error: {response.text}")
+    audio_stream = client.text_to_speech.convert(
+        text=script,
+        voice_id="JBFqnCBsd6RMkjVDRZzb", # George voice
+        model_id="eleven_multilingual_v2",
+        output_format="mp3_44100_128"
+    )
 
     # Generate unique filename
     filename = f"audio_{int(datetime.utcnow().timestamp())}.mp3"
@@ -262,9 +251,8 @@ def generate_audio(script: str) -> str:
             os.makedirs('static')
 
     with open(filepath, 'wb') as f:
-        for chunk in response.iter_content(chunk_size=1024):
-            if chunk:
-                f.write(chunk)
+        for chunk in audio_stream:
+            f.write(chunk)
 
     return f"/static/{filename}"
 
