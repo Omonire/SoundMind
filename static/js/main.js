@@ -90,9 +90,27 @@ async function pollJob(jobId) {
 
 document.addEventListener('DOMContentLoaded', () => {
     const email = localStorage.getItem('user_email');
+    const credits = localStorage.getItem('user_credits');
+
     if (email) {
-        document.getElementById('auth-section').classList.add('hidden');
-        document.getElementById('app-section').classList.remove('hidden');
-        document.getElementById('user-info').textContent = `Logged in as: ${email} | Credits: ${localStorage.getItem('user_credits')}`;
+        // Toggle view
+        const authSection = document.getElementById('auth-section');
+        const loggedInView = document.getElementById('logged-in-view');
+        const userInfo = document.getElementById('user-info');
+        const authLinks = document.getElementById('auth-links');
+
+        if (authSection) authSection.classList.add('hidden');
+        if (loggedInView) loggedInView.classList.remove('hidden');
+        if (userInfo) userInfo.classList.remove('hidden');
+        if (authLinks) authLinks.classList.add('hidden');
+
+        // Update values
+        const userEmailSpan = document.getElementById('user-email');
+        const userCreditsSpan = document.getElementById('user-credits');
+        const dashCreditsDiv = document.getElementById('dash-credits');
+
+        if (userEmailSpan) userEmailSpan.textContent = email;
+        if (userCreditsSpan) userCreditsSpan.textContent = credits;
+        if (dashCreditsDiv) dashCreditsDiv.textContent = credits;
     }
 });

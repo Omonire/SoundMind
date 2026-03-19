@@ -1,6 +1,6 @@
 /*
    Sound Mind - FSCSS (Figured Shorthand CSS)
-   Using shorthand syntax for rapid styling as per FSCSS specs.
+   Modern SaaS utility classes for Sound Mind.
 */
 
 .f-flex-center {
@@ -16,17 +16,19 @@
 }
 
 .f-card {
-    p: 1.5rem;
-    br: 0.5rem;
-    bs: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    p: 2rem;
+    br: 1rem;
+    bs: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     bgc: #ffffff;
+    b: 1px s #f3f4f6;
 }
 
 .f-btn {
-    p: 0.5rem 1rem;
-    br: 0.375rem;
-    fw: 600;
-    tr: all 0.2s;
+    p: 0.75rem 1.5rem;
+    br: 0.5rem;
+    fw: 700;
+    tr: all 0.3s;
+    cur: p;
 }
 
 .f-btn-primary {
@@ -36,17 +38,34 @@
 
 .f-btn-primary:hover {
     bgc: #2563eb;
+    bs: 0 4px 14px 0 rgba(59, 130, 246, 0.5);
+    tf: tY(-2px);
 }
 
 .f-input {
     w: 100%;
-    p: 0.5rem;
-    b: 1px s #d1d5db;
-    br: 0.375rem;
+    p: 0.75rem;
+    b: 1px s #e5e7eb;
+    br: 0.5rem;
     ol: n;
+    tr: all 0.2s;
 }
 
 .f-input:focus {
     bc: #3b82f6;
-    bs: 0 0 0 2px rgba(59, 130, 246, 0.5);
+    bs: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+.f-grad-blue {
+    bg: lg(135deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+.f-text-xs {
+    fs: 0.75rem;
+    lh: 1rem;
+}
+
+.f-text-lg {
+    fs: 1.125rem;
+    lh: 1.75rem;
 }
