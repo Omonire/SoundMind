@@ -1,0 +1,8 @@
+.env
+instance/
+soundmind.db
+app.log
+test_app.py
+static/audio_*.mp3
+__pycache__/
+.pytest_cache/

@@ -5,7 +5,7 @@ import json
 import math
 import re
 from datetime import datetime
-from flask import Flask, request, jsonify, render_template, session
+from flask import Flask, request, jsonify, render_template, session, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 import google.generativeai as genai
@@ -16,9 +16,16 @@ from typing import List, Dict, Any, Optional
 load_dotenv()
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///soundmind.db'
+
+# Vercel compatibility for SQLite (POC only - won't persist across cold starts)
+if os.environ.get('VERCEL'):
+    db_path = '/tmp/soundmind.db'
+else:
+    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'soundmind.db')
+
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'your-secret-key-for-session'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-for-session')
 
 db = SQLAlchemy(app)
 
@@ -245,10 +252,14 @@ def generate_audio(script: str) -> str:
 
     # Generate unique filename
     filename = f"audio_{int(datetime.utcnow().timestamp())}.mp3"
-    filepath = os.path.join('static', filename)
 
-    if not os.path.exists('static'):
-        os.makedirs('static')
+    # On Vercel, use /tmp for temporary file storage
+    if os.environ.get('VERCEL'):
+        filepath = os.path.join('/tmp', filename)
+    else:
+        filepath = os.path.join('static', filename)
+        if not os.path.exists('static'):
+            os.makedirs('static')
 
     with open(filepath, 'wb') as f:
         for chunk in response.iter_content(chunk_size=1024):
@@ -256,6 +267,13 @@ def generate_audio(script: str) -> str:
                 f.write(chunk)
 
     return f"/static/{filename}"
+
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    """Serve static files, handling Vercel's /tmp for audio files."""
+    if os.environ.get('VERCEL') and filename.startswith('audio_'):
+        return send_from_directory('/tmp', filename)
+    return send_from_directory('static', filename)
 
 # --- Webhook ---
 
