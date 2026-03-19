@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sound Mind - AI Audio Document Platform</title>
+    <!-- Tailwind CDN for POC -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FSCSS Browser-side Compiler -->
+    <script src="https://cdn.jsdelivr.net/npm/fscss@latest/dist/fscss.min.js"></script>
+    <link rel="stylesheet" type="text/fscss" href="{{ url_for('static', filename='css/style.fscss') }}">
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans">
+
+    <header class="bg-white border-b p-4 shadow-sm mb-8">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-blue-600">Sound Mind</h1>
+            <div id="user-info" class="text-sm font-medium text-gray-600">Not logged in</div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto p-4">
+
+        <!-- Auth Section -->
+        <section id="auth-section" class="f-card mb-8">
+            <h2 class="text-xl font-semibold mb-4">Login or Signup</h2>
+            <div class="f-grid-2">
+                <div>
+                    <input type="email" id="email" placeholder="Email" class="f-input mb-2">
+                    <input type="password" id="password" placeholder="Password" class="f-input mb-4">
+                    <div class="flex gap-2">
+                        <button onclick="login(document.getElementById('email').value, document.getElementById('password').value)" class="f-btn f-btn-primary w-full">Login</button>
+                        <button onclick="signup(document.getElementById('email').value, document.getElementById('password').value)" class="f-btn border border-blue-600 text-blue-600 w-full hover:bg-blue-50">Signup</button>
+                    </div>
+                </div>
+                <div class="text-sm text-gray-500 flex items-center p-4 bg-gray-50 rounded">
+                    <p>Enter your details to start converting documents to audio podcasts or monologues instantly.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- App Section (Hidden by default) -->
+        <section id="app-section" class="hidden">
+            <div class="f-card mb-8">
+                <h2 class="text-xl font-semibold mb-4">Convert Document</h2>
+                <textarea id="doc-text" placeholder="Paste your document text here..." rows="8" class="f-input mb-4"></textarea>
+
+                <div class="flex items-center gap-4 mb-4">
+                    <label class="font-medium">Mode:</label>
+                    <select id="doc-mode" class="f-input w-48">
+                        <option value="monologue">Monologue</option>
+                        <option value="podcast">Podcast</option>
+                    </select>
+                </div>
+
+                <button onclick="processDocument(document.getElementById('doc-text').value, document.getElementById('doc-mode').value)" class="f-btn f-btn-primary w-full py-3">Generate Audio</button>
+            </div>
+
+            <!-- Results Section -->
+            <div id="results" class="f-card border-t-4 border-blue-600">
+                <h2 class="text-xl font-semibold mb-4">Your Audio result</h2>
+                <div id="job-status" class="text-gray-500 mb-4 italic">No active jobs.</div>
+                <div id="audio-result" class="bg-gray-100 p-8 rounded-lg f-flex-center">
+                    <div class="text-gray-400">Audio will appear here once generated.</div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="mt-16 text-center text-gray-400 text-sm p-8">
+        &copy; 2025 Sound Mind AI. Powered by Gemini & ElevenLabs.
+    </footer>
+
+    <!-- Main Logic -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
