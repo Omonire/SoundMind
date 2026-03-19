@@ -92,43 +92,80 @@ async function login(email, password) {
 // --- Document Processing ---
 
 async function processDocument(text, mode) {
+    const statusElement = document.getElementById('job-status');
+    const btn = document.getElementById('generate-btn');
+    const btnText = document.getElementById('btn-text');
+    const btnIcon = document.getElementById('btn-icon');
+
     try {
         const result = await apiRequest('/process', 'POST', { text, mode });
-        console.log('Job started:', result.job_id);
-        pollJob(result.job_id);
+        console.log('Job finished:', result.job_id);
+
+        if (result.status === 'COMPLETED') {
+            statusElement.textContent = 'Script ready! Speaking...';
+            speakText(result.script);
+
+            // UI Reset
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            btnText.textContent = 'Generate Audio';
+            btnIcon.textContent = '⚡';
+
+            // Show script in result area
+            const audioContainer = document.getElementById('audio-result');
+            audioContainer.innerHTML = `
+                <div class="text-left w-full">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-xs font-bold uppercase text-blue-600">Generated Script</span>
+                        <button onclick="stopSpeaking()" class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200">Stop Voice</button>
+                    </div>
+                    <p class="text-gray-700 text-sm whitespace-pre-wrap italic bg-white p-4 rounded-lg border border-blue-50">${result.script}</p>
+                </div>
+            `;
+        }
         return result.job_id;
     } catch (err) {
         alert(err.message);
+        statusElement.textContent = 'Error: ' + err.message;
+        btn.disabled = false;
+        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        btnText.textContent = 'Generate Audio';
+        btnIcon.textContent = '⚡';
     }
 }
 
-async function pollJob(jobId) {
-    const statusElement = document.getElementById('job-status');
-    const audioContainer = document.getElementById('audio-result');
+// --- Browser TTS Logic ---
 
-    statusElement.textContent = 'Processing...';
+let currentUtterance = null;
 
-    const interval = setInterval(async () => {
-        try {
-            const job = await apiRequest(`/job/${jobId}`);
-            if (job.status === 'COMPLETED') {
-                clearInterval(interval);
-                statusElement.textContent = 'Completed!';
-                audioContainer.innerHTML = `
-                    <audio controls>
-                        <source src="${job.audio_url}" type="audio/mpeg">
-                        Your browser does not support the audio element.
-                    </audio>
-                `;
-            } else if (job.status === 'FAILED') {
-                clearInterval(interval);
-                statusElement.textContent = 'Failed to process document.';
-            }
-        } catch (err) {
-            clearInterval(interval);
-            console.error('Polling failed:', err);
-        }
-    }, 3000);
+function speakText(text) {
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+
+    // Choose a professional-sounding voice if available
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoice = voices.find(v => v.name.includes('Google US English') || v.name.includes('Samantha')) || voices[0];
+
+    if (preferredVoice) {
+        utterance.voice = preferredVoice;
+    }
+
+    utterance.pitch = 1.0;
+    utterance.rate = 1.0;
+
+    currentUtterance = utterance;
+    window.speechSynthesis.speak(utterance);
+
+    utterance.onend = () => {
+        document.getElementById('job-status').textContent = 'Playback finished.';
+    };
+}
+
+function stopSpeaking() {
+    window.speechSynthesis.cancel();
+    document.getElementById('job-status').textContent = 'Playback stopped.';
 }
 
 // --- UI Logic (Bound in HTML) ---

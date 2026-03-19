@@ -87,8 +87,7 @@ class SoundMindTestCase(unittest.TestCase):
         # Actually, let's just test a helper if we had one, but it's inside 'process'
         # Let's mock the process_document and generate_audio calls
         import unittest.mock as mock
-        with mock.patch('app.process_document', return_value="script"), \
-             mock.patch('app.generate_audio', return_value="/static/test.mp3"):
+        with mock.patch('app.process_document', return_value="script"):
             response = self.app.post('/process',
                                      data=json.dumps(dict(text=text, mode='monologue')),
                                      content_type='application/json')

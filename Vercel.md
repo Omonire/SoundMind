@@ -6,7 +6,6 @@ This guide outlines how to deploy the "Sound Mind" AI platform as a Serverless F
 - A [Vercel](https://vercel.com/) account.
 - API keys for:
   - **Google Gemini:** [Google AI Studio](https://aistudio.google.com/)
-  - **ElevenLabs:** [ElevenLabs Dashboard](https://elevenlabs.io/)
   - **Paystack (Optional):** [Paystack Settings](https://dashboard.paystack.com/)
 
 ## 🛠️ Deployment Steps
@@ -23,7 +22,6 @@ You must configure the following Environment Variables in your Vercel Project Se
 | Key | Description |
 | :--- | :--- |
 | `GEMINI_API_KEY` | Your Google Gemini 1.5 API Key. |
-| `ELEVENLABS_API_KEY` | Your ElevenLabs API Key. |
 | `PAYSTACK_SECRET_KEY` | (Optional) Your Paystack Secret Key for webhooks. |
 | `SECRET_KEY` | A random string for Flask session security. |
 
@@ -56,38 +54,20 @@ To build a professional, persistent version of Sound Mind, you should swap the e
 | **Vercel Postgres** | Native Integration | Built-in managed PostgreSQL (powered by Neon). Best for sticking entirely within the Vercel ecosystem. |
 | **Supabase** | All-in-one Backend | Provides a PostgreSQL DB, Auth, and Storage in one platform. Excellent for scaling. |
 
-### 2. Audio Storage Alternatives (File Persistence)
+### 2. Audio Generation (Current: Browser-Native)
 
-Instead of saving MP3s to a folder, upload them to a bucket and store the resulting URL in your database.
+The app currently uses the **Web Speech API** for unlimited, free text-to-speech directly in the user's browser. No audio storage is required.
 
-| Service | Best For | Why? |
-| :--- | :--- | :--- |
-| **Vercel Blob** | Easiest Setup | Native to Vercel. One-line `put()` command to upload files and get a permanent URL. |
-| **Supabase Storage** | Unified Stack | Integrated with Supabase Auth and DB. Great if you use Supabase for your database. |
-| **AWS S3 / GCS** | Industrial Scale | The industry standards for massive file storage and CDN delivery. |
+If you wish to use high-quality, professional voices like **ElevenLabs** or **Play.ht** in production, you would need to:
+1. Re-integrate their API in `app.py`.
+2. Use a storage solution (like Vercel Blob) to host the generated MP3 files.
 
-## 🛠️ Implementation Example: Vercel Postgres + Vercel Blob
+## 🛠️ Implementation Example: Vercel Postgres
 
-If you decide to upgrade, your `app.py` would change as follows:
+If you decide to upgrade to a persistent database, your `app.py` would change as follows:
 
 ```python
-# 1. Update DB Connection
+# Update DB Connection
 # Replace sqlite:// with your Vercel Postgres string
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('POSTGRES_URL')
-
-# 2. Update Audio Generation to use Vercel Blob
-import vercel_blob
-
-def generate_audio(script: str) -> str:
-    # ... (generate audio bytes via ElevenLabs) ...
-
-    # Upload to Vercel Blob instead of /tmp
-    resp = vercel_blob.put(
-        f"audio_{timestamp}.mp3",
-        audio_bytes,
-        {"access": "public"}
-    )
-
-    # Return the permanent URL
-    return resp['url']
 ```

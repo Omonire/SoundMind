@@ -3,7 +3,7 @@
 ## Technical Stack
 - **Backend:** Flask (Python 3.12+)
 - **Database:** SQLite (Local file)
-- **APIs:** Gemini (Logic), ElevenLabs (Voice), Paystack (Payments)
+- **APIs:** Gemini (Logic), Web Speech API (Voice), Paystack (Payments)
 
 ## Coding Preferences
 - **Structure:** Keep the project in a single-file `app.py` as much as possible.

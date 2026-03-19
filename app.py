@@ -9,7 +9,6 @@ from flask import Flask, request, jsonify, render_template, session, send_from_d
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 import google.generativeai as genai
-from elevenlabs.client import ElevenLabs
 from typing import List, Dict, Any, Optional
 
 # Load environment variables
@@ -107,7 +106,9 @@ def index():
 
 @app.route('/process', methods=['POST'])
 def process():
-    """Endpoint to process a document."""
+    """Endpoint to process a document.
+    Now returns the script text for client-side TTS.
+    """
     user_id = session.get('user_id')
     if not user_id:
         return jsonify({"error": "Unauthorized"}), 401
@@ -128,6 +129,7 @@ def process():
         user.last_processed_date = now
 
     # 1 Credit = 1,000 characters (ceiling-based)
+    # Even without ElevenLabs, processing uses Gemini (credits still apply)
     credits_needed = max(1, math.ceil(len(text) / 1000))
 
     if user.credits_balance < credits_needed:
@@ -144,11 +146,11 @@ def process():
     db.session.commit()
 
     try:
-        # Step 1: Process document to script
+        # Step 1: Process document to script via Gemini
         script_raw = process_document(text, mode)
 
-        # Step 2: Clean script for audio generation
-        # If podcast mode, strip JSON structure to avoid reading it out
+        # Step 2: Clean script for browser TTS
+        # If podcast mode, strip JSON structure
         if mode == 'podcast':
             try:
                 # Find JSON block if Gemini included text around it
@@ -163,18 +165,15 @@ def process():
         else:
             script_clean = script_raw
 
-        # Step 3: Generate audio
-        audio_url = generate_audio(script_clean)
-
-        # Step 3: Update job
+        # Step 3: Update job (we store the script instead of a URL)
         job.status = 'COMPLETED'
-        job.audio_url = audio_url
+        job.file_path = script_clean # Reusing file_path for text content in this POC
         db.session.commit()
 
         return jsonify({
             "job_id": job.id,
             "status": job.status,
-            "audio_url": job.audio_url,
+            "script": script_clean,
             "credits_remaining": user.credits_balance
         }), 200
 
@@ -226,48 +225,6 @@ def process_document(text: str, mode: str) -> str:
 
     response = model.generate_content(prompt)
     return response.text
-
-def generate_audio(script: str) -> str:
-    """Uses ElevenLabs SDK to convert script to MP3 and returns the URL.
-
-    For POC, we'll save the file locally and return the path as the URL.
-    """
-    api_key = os.getenv('ELEVENLABS_API_KEY')
-    if not api_key:
-        raise ValueError("ELEVENLABS_API_KEY is not set")
-
-    client = ElevenLabs(api_key=api_key)
-
-    audio_stream = client.text_to_speech.convert(
-        text=script,
-        voice_id="JBFqnCBsd6RMkjVDRZzb", # George voice
-        model_id="eleven_multilingual_v2",
-        output_format="mp3_44100_128"
-    )
-
-    # Generate unique filename
-    filename = f"audio_{int(datetime.utcnow().timestamp())}.mp3"
-
-    # On Vercel, use /tmp for temporary file storage
-    if os.environ.get('VERCEL'):
-        filepath = os.path.join('/tmp', filename)
-
-        # --- PRODUCTION BLOB STORAGE EXAMPLE (VERCEL BLOB) ---
-        # import vercel_blob
-        # audio_data = b"".join(audio_stream)
-        # resp = vercel_blob.put(filename, audio_data, {"access": "public"})
-        # return resp['url']
-
-    else:
-        filepath = os.path.join('static', filename)
-        if not os.path.exists('static'):
-            os.makedirs('static')
-
-    with open(filepath, 'wb') as f:
-        for chunk in audio_stream:
-            f.write(chunk)
-
-    return f"/static/{filename}"
 
 @app.route('/static/<path:filename>')
 def serve_static(filename):

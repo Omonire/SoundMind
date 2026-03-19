@@ -33,7 +33,7 @@
     <header class="hero-gradient border-b border-blue-100 py-20 px-4 text-center">
         <div class="max-w-4xl mx-auto">
             <h1 class="text-5xl font-extrabold text-blue-900 mb-6">Sound Mind</h1>
-            <p class="text-xl text-blue-700 mb-10 max-w-2xl mx-auto">Turn your PDFs, documents, and notes into professional podcasts and monologues instantly with AI.</p>
+            <p class="text-xl text-blue-700 mb-10 max-w-2xl mx-auto">Turn your PDFs, documents, and notes into professional AI-voiced scripts instantly in your browser.</p>
             <div id="auth-links" class="flex gap-4 justify-center">
                 <a href="#auth-section" class="f-btn f-btn-primary px-8 py-3 rounded-full text-lg">Get Started for Free</a>
                 <a href="#features" class="f-btn bg-white border border-blue-200 text-blue-600 px-8 py-3 rounded-full text-lg hover:bg-blue-50">See How it Works</a>
@@ -48,7 +48,7 @@
         <section id="features" class="grid md:grid-cols-3 gap-12 mb-24">
             <div class="text-center">
                 <div class="feature-icon inline-block mb-4 text-2xl">🎙️</div>
-                <h3 class="text-xl font-bold mb-2">Podcast Mode</h3>
+                <h3 class="text-xl font-bold mb-2">Podcast Scripts</h3>
                 <p class="text-gray-600">A two-person dialogue between a Host and an Expert for engaging learning.</p>
             </div>
             <div class="text-center">
@@ -57,9 +57,9 @@
                 <p class="text-gray-600">Clear, concise narration for quick summaries and deep-dives.</p>
             </div>
             <div class="text-center">
-                <div class="feature-icon inline-block mb-4 text-2xl">⚡</div>
-                <h3 class="text-xl font-bold mb-2">Instant Credits</h3>
-                <p class="text-gray-600">Securely top-up your credits via Paystack and generate more on the fly.</p>
+                <div class="feature-icon inline-block mb-4 text-2xl">🔊</div>
+                <h3 class="text-xl font-bold mb-2">Browser Voice</h3>
+                <p class="text-gray-600">Unlimited audio generation using your browser's native speech engine.</p>
             </div>
         </section>
 
@@ -194,6 +194,7 @@
             btnText.textContent = 'Processing...';
             btnIcon.textContent = '🔄';
 
+            // Handled within processDocument now for simpler UI sync
             processDocument(text, mode);
         }
     </script>
