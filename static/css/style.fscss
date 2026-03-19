@@ -1,0 +1,52 @@
+/*
+   Sound Mind - FSCSS (Figured Shorthand CSS)
+   Using shorthand syntax for rapid styling as per FSCSS specs.
+*/
+
+.f-flex-center {
+    d: flex;
+    ai: c;
+    jc: c;
+}
+
+.f-grid-2 {
+    d: grid;
+    gtc: 1fr 1fr;
+    g: 1rem;
+}
+
+.f-card {
+    p: 1.5rem;
+    br: 0.5rem;
+    bs: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    bgc: #ffffff;
+}
+
+.f-btn {
+    p: 0.5rem 1rem;
+    br: 0.375rem;
+    fw: 600;
+    tr: all 0.2s;
+}
+
+.f-btn-primary {
+    bgc: #3b82f6;
+    c: #ffffff;
+}
+
+.f-btn-primary:hover {
+    bgc: #2563eb;
+}
+
+.f-input {
+    w: 100%;
+    p: 0.5rem;
+    b: 1px s #d1d5db;
+    br: 0.375rem;
+    ol: n;
+}
+
+.f-input:focus {
+    bc: #3b82f6;
+    bs: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}

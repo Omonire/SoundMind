@@ -6,8 +6,9 @@
     <title>Sound Mind - AI Audio Document Platform</title>
     <!-- Tailwind CDN for POC -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Custom FSCSS & Tailwind Styles -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- FSCSS Browser-side Compiler -->
+    <script src="https://cdn.jsdelivr.net/npm/fscss@latest/dist/fscss.min.js"></script>
+    <link rel="stylesheet" type="text/fscss" href="{{ url_for('static', filename='css/style.fscss') }}">
 </head>
 <body class="bg-gray-50 text-gray-900 font-sans">
 
