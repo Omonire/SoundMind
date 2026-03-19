@@ -102,26 +102,41 @@ async function processDocument(text, mode) {
         console.log('Job finished:', result.job_id);
 
         if (result.status === 'COMPLETED') {
-            statusElement.textContent = 'Script ready! Speaking...';
-            speakText(result.script);
+            const audioContainer = document.getElementById('audio-result');
+
+            if (result.audio_url) {
+                statusElement.textContent = 'Premium audio ready!';
+                audioContainer.innerHTML = `
+                    <div class="flex flex-col items-center gap-4 w-full">
+                        <audio controls class="w-full">
+                            <source src="${result.audio_url}" type="audio/mpeg">
+                            Your browser does not support the audio element.
+                        </audio>
+                        <details class="w-full">
+                            <summary class="text-xs text-blue-600 cursor-pointer hover:underline">View Generated Script</summary>
+                            <p class="mt-2 text-gray-700 text-sm whitespace-pre-wrap italic bg-white p-4 rounded-lg border border-blue-50">${result.script}</p>
+                        </details>
+                    </div>
+                `;
+            } else {
+                statusElement.textContent = 'Script ready! Speaking (Free Fallback)...';
+                speakText(result.script);
+                audioContainer.innerHTML = `
+                    <div class="text-left w-full">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-xs font-bold uppercase text-blue-600">Generated Script (Fallback)</span>
+                            <button onclick="stopSpeaking()" class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200">Stop Voice</button>
+                        </div>
+                        <p class="text-gray-700 text-sm whitespace-pre-wrap italic bg-white p-4 rounded-lg border border-blue-50">${result.script}</p>
+                    </div>
+                `;
+            }
 
             // UI Reset
             btn.disabled = false;
             btn.classList.remove('opacity-50', 'cursor-not-allowed');
             btnText.textContent = 'Generate Audio';
             btnIcon.textContent = '⚡';
-
-            // Show script in result area
-            const audioContainer = document.getElementById('audio-result');
-            audioContainer.innerHTML = `
-                <div class="text-left w-full">
-                    <div class="flex justify-between items-center mb-4">
-                        <span class="text-xs font-bold uppercase text-blue-600">Generated Script</span>
-                        <button onclick="stopSpeaking()" class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200">Stop Voice</button>
-                    </div>
-                    <p class="text-gray-700 text-sm whitespace-pre-wrap italic bg-white p-4 rounded-lg border border-blue-50">${result.script}</p>
-                </div>
-            `;
         }
         return result.job_id;
     } catch (err) {

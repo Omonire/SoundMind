@@ -9,6 +9,7 @@ from flask import Flask, request, jsonify, render_template, session, send_from_d
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 import google.generativeai as genai
+from elevenlabs.client import ElevenLabs
 from typing import List, Dict, Any, Optional
 
 # Load environment variables
@@ -165,14 +166,23 @@ def process():
         else:
             script_clean = script_raw
 
-        # Step 3: Update job (we store the script instead of a URL)
+        # Step 3: Attempt ElevenLabs Audio Generation
+        audio_url = None
+        try:
+            audio_url = generate_audio(script_clean)
+        except Exception as audio_err:
+            print(f"ElevenLabs failed, falling back to browser TTS: {audio_err}")
+
+        # Step 4: Update job
         job.status = 'COMPLETED'
+        job.audio_url = audio_url
         job.file_path = script_clean # Reusing file_path for text content in this POC
         db.session.commit()
 
         return jsonify({
             "job_id": job.id,
             "status": job.status,
+            "audio_url": job.audio_url,
             "script": script_clean,
             "credits_remaining": user.credits_balance
         }), 200
@@ -225,6 +235,41 @@ def process_document(text: str, mode: str) -> str:
 
     response = model.generate_content(prompt)
     return response.text
+
+def generate_audio(script: str) -> str:
+    """Uses ElevenLabs SDK to convert script to MP3 and returns the URL.
+
+    For POC, we'll save the file locally and return the path as the URL.
+    """
+    api_key = os.getenv('ELEVENLABS_API_KEY')
+    if not api_key:
+        raise ValueError("ELEVENLABS_API_KEY is not set")
+
+    client = ElevenLabs(api_key=api_key)
+
+    audio_stream = client.text_to_speech.convert(
+        text=script,
+        voice_id="JBFqnCBsd6RMkjVDRZzb", # George voice
+        model_id="eleven_multilingual_v2",
+        output_format="mp3_44100_128"
+    )
+
+    # Generate unique filename
+    filename = f"audio_{int(datetime.utcnow().timestamp())}.mp3"
+
+    # On Vercel, use /tmp for temporary file storage
+    if os.environ.get('VERCEL'):
+        filepath = os.path.join('/tmp', filename)
+    else:
+        filepath = os.path.join('static', filename)
+        if not os.path.exists('static'):
+            os.makedirs('static')
+
+    with open(filepath, 'wb') as f:
+        for chunk in audio_stream:
+            f.write(chunk)
+
+    return f"/static/{filename}"
 
 @app.route('/static/<path:filename>')
 def serve_static(filename):
