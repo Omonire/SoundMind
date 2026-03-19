@@ -23,6 +23,12 @@ if os.environ.get('VERCEL'):
 else:
     db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'soundmind.db')
 
+# --- PRODUCTION DB CONFIG EXAMPLE (TURSO / POSTGRES) ---
+# For Turso (Edge SQLite):
+# app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('TURSO_DATABASE_URL')
+# For Vercel Postgres:
+# app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('POSTGRES_URL')
+
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-for-session')
@@ -245,6 +251,13 @@ def generate_audio(script: str) -> str:
     # On Vercel, use /tmp for temporary file storage
     if os.environ.get('VERCEL'):
         filepath = os.path.join('/tmp', filename)
+
+        # --- PRODUCTION BLOB STORAGE EXAMPLE (VERCEL BLOB) ---
+        # import vercel_blob
+        # audio_data = b"".join(audio_stream)
+        # resp = vercel_blob.put(filename, audio_data, {"access": "public"})
+        # return resp['url']
+
     else:
         filepath = os.path.join('static', filename)
         if not os.path.exists('static'):

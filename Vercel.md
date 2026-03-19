@@ -42,5 +42,52 @@ Follow the prompts to link your project and deploy.
 5. Click **"Deploy"**.
 
 ## ⚠️ Important Notes
-- **Persistence:** Vercel uses a read-only, ephemeral filesystem. This app uses `/tmp` for the SQLite database (`soundmind.db`) and generated audio files. Data will be **lost** when the Serverless Function cold-starts (restarts).
-- **Production Use:** For a production-ready app, replace SQLite with a persistent database (e.g., Vercel Postgres or Supabase) and store audio files in an S3-compatible bucket (e.g., Vercel Blob or AWS S3).
+- **Persistence:** Vercel uses a read-only, ephemeral filesystem. This app currently uses `/tmp` for the SQLite database (`soundmind.db`) and generated audio files. Data will be **lost** when the Serverless Function cold-starts (restarts).
+
+## 🚀 Moving to Production (Persistence)
+
+To build a professional, persistent version of Sound Mind, you should swap the ephemeral `/tmp` storage for managed cloud services.
+
+### 1. Database Alternatives (SQL Persistence)
+
+| Service | Best For | Why? |
+| :--- | :--- | :--- |
+| **Turso** | Keeping SQLite logic | Managed "Edge SQLite". Extremely fast and allows you to keep using SQLite-style code with SQLAlchemy. |
+| **Vercel Postgres** | Native Integration | Built-in managed PostgreSQL (powered by Neon). Best for sticking entirely within the Vercel ecosystem. |
+| **Supabase** | All-in-one Backend | Provides a PostgreSQL DB, Auth, and Storage in one platform. Excellent for scaling. |
+
+### 2. Audio Storage Alternatives (File Persistence)
+
+Instead of saving MP3s to a folder, upload them to a bucket and store the resulting URL in your database.
+
+| Service | Best For | Why? |
+| :--- | :--- | :--- |
+| **Vercel Blob** | Easiest Setup | Native to Vercel. One-line `put()` command to upload files and get a permanent URL. |
+| **Supabase Storage** | Unified Stack | Integrated with Supabase Auth and DB. Great if you use Supabase for your database. |
+| **AWS S3 / GCS** | Industrial Scale | The industry standards for massive file storage and CDN delivery. |
+
+## 🛠️ Implementation Example: Vercel Postgres + Vercel Blob
+
+If you decide to upgrade, your `app.py` would change as follows:
+
+```python
+# 1. Update DB Connection
+# Replace sqlite:// with your Vercel Postgres string
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('POSTGRES_URL')
+
+# 2. Update Audio Generation to use Vercel Blob
+import vercel_blob
+
+def generate_audio(script: str) -> str:
+    # ... (generate audio bytes via ElevenLabs) ...
+
+    # Upload to Vercel Blob instead of /tmp
+    resp = vercel_blob.put(
+        f"audio_{timestamp}.mp3",
+        audio_bytes,
+        {"access": "public"}
+    )
+
+    # Return the permanent URL
+    return resp['url']
+```
