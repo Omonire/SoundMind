@@ -22,6 +22,51 @@ async function apiRequest(endpoint, method = 'GET', data = null) {
     return result;
 }
 
+// --- PDF Extraction ---
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+async function handlePdfUpload(file) {
+    if (!file) return;
+
+    const statusElement = document.getElementById('job-status');
+    statusElement.textContent = 'Extracting PDF text...';
+
+    try {
+        const text = await extractText(file);
+        document.getElementById('doc-text').value = text;
+        statusElement.textContent = 'PDF text extracted successfully.';
+    } catch (err) {
+        console.error('PDF extraction failed:', err);
+        statusElement.textContent = 'Failed to extract PDF text.';
+        alert('Could not extract text from this PDF. Please try copying it manually.');
+    }
+}
+
+async function extractText(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = async function() {
+            try {
+                const typedarray = new Uint8Array(this.result);
+                const pdf = await pdfjsLib.getDocument(typedarray).promise;
+                let fullText = "";
+
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const content = await page.getTextContent();
+                    fullText += content.items.map(s => s.str).join(" ") + "\n";
+                }
+                resolve(fullText);
+            } catch (err) {
+                reject(err);
+            }
+        };
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(file);
+    });
+}
+
 // --- Auth Handlers ---
 
 async function signup(email, password) {
@@ -90,9 +135,27 @@ async function pollJob(jobId) {
 
 document.addEventListener('DOMContentLoaded', () => {
     const email = localStorage.getItem('user_email');
+    const credits = localStorage.getItem('user_credits');
+
     if (email) {
-        document.getElementById('auth-section').classList.add('hidden');
-        document.getElementById('app-section').classList.remove('hidden');
-        document.getElementById('user-info').textContent = `Logged in as: ${email} | Credits: ${localStorage.getItem('user_credits')}`;
+        // Toggle view
+        const authSection = document.getElementById('auth-section');
+        const loggedInView = document.getElementById('logged-in-view');
+        const userInfo = document.getElementById('user-info');
+        const authLinks = document.getElementById('auth-links');
+
+        if (authSection) authSection.classList.add('hidden');
+        if (loggedInView) loggedInView.classList.remove('hidden');
+        if (userInfo) userInfo.classList.remove('hidden');
+        if (authLinks) authLinks.classList.add('hidden');
+
+        // Update values
+        const userEmailSpan = document.getElementById('user-email');
+        const userCreditsSpan = document.getElementById('user-credits');
+        const dashCreditsDiv = document.getElementById('dash-credits');
+
+        if (userEmailSpan) userEmailSpan.textContent = email;
+        if (userCreditsSpan) userCreditsSpan.textContent = credits;
+        if (dashCreditsDiv) dashCreditsDiv.textContent = credits;
     }
 });

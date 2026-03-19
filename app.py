@@ -5,20 +5,33 @@ import json
 import math
 import re
 from datetime import datetime
-from flask import Flask, request, jsonify, render_template, session
+from flask import Flask, request, jsonify, render_template, session, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 import google.generativeai as genai
-import requests
+from elevenlabs.client import ElevenLabs
 from typing import List, Dict, Any, Optional
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///soundmind.db'
+
+# Vercel compatibility for SQLite (POC only - won't persist across cold starts)
+if os.environ.get('VERCEL'):
+    db_path = '/tmp/soundmind.db'
+else:
+    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'soundmind.db')
+
+# --- PRODUCTION DB CONFIG EXAMPLE (TURSO / POSTGRES) ---
+# For Turso (Edge SQLite):
+# app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('TURSO_DATABASE_URL')
+# For Vercel Postgres:
+# app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('POSTGRES_URL')
+
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'your-secret-key-for-session'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-for-session')
 
 db = SQLAlchemy(app)
 
@@ -195,7 +208,7 @@ def process_document(text: str, mode: str) -> str:
         raise ValueError("GEMINI_API_KEY is not set")
 
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-1.5-pro')
+    model = genai.GenerativeModel('gemini-1.5-flash')
 
     if mode == 'podcast':
         prompt = (
@@ -215,7 +228,7 @@ def process_document(text: str, mode: str) -> str:
     return response.text
 
 def generate_audio(script: str) -> str:
-    """Uses ElevenLabs API to convert script to MP3 and returns the URL.
+    """Uses ElevenLabs SDK to convert script to MP3 and returns the URL.
 
     For POC, we'll save the file locally and return the path as the URL.
     """
@@ -223,39 +236,45 @@ def generate_audio(script: str) -> str:
     if not api_key:
         raise ValueError("ELEVENLABS_API_KEY is not set")
 
-    url = "https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM" # Adam voice
-    headers = {
-        "Accept": "audio/mpeg",
-        "Content-Type": "application/json",
-        "xi-api-key": api_key
-    }
+    client = ElevenLabs(api_key=api_key)
 
-    data = {
-        "text": script,
-        "model_id": "eleven_monolingual_v1",
-        "voice_settings": {
-            "stability": 0.5,
-            "similarity_boost": 0.5
-        }
-    }
-
-    response = requests.post(url, json=data, headers=headers)
-    if response.status_code != 200:
-        raise Exception(f"ElevenLabs API error: {response.text}")
+    audio_stream = client.text_to_speech.convert(
+        text=script,
+        voice_id="JBFqnCBsd6RMkjVDRZzb", # George voice
+        model_id="eleven_multilingual_v2",
+        output_format="mp3_44100_128"
+    )
 
     # Generate unique filename
     filename = f"audio_{int(datetime.utcnow().timestamp())}.mp3"
-    filepath = os.path.join('static', filename)
 
-    if not os.path.exists('static'):
-        os.makedirs('static')
+    # On Vercel, use /tmp for temporary file storage
+    if os.environ.get('VERCEL'):
+        filepath = os.path.join('/tmp', filename)
+
+        # --- PRODUCTION BLOB STORAGE EXAMPLE (VERCEL BLOB) ---
+        # import vercel_blob
+        # audio_data = b"".join(audio_stream)
+        # resp = vercel_blob.put(filename, audio_data, {"access": "public"})
+        # return resp['url']
+
+    else:
+        filepath = os.path.join('static', filename)
+        if not os.path.exists('static'):
+            os.makedirs('static')
 
     with open(filepath, 'wb') as f:
-        for chunk in response.iter_content(chunk_size=1024):
-            if chunk:
-                f.write(chunk)
+        for chunk in audio_stream:
+            f.write(chunk)
 
     return f"/static/{filename}"
+
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    """Serve static files, handling Vercel's /tmp for audio files."""
+    if os.environ.get('VERCEL') and filename.startswith('audio_'):
+        return send_from_directory('/tmp', filename)
+    return send_from_directory('static', filename)
 
 # --- Webhook ---
 
